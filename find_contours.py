@@ -192,35 +192,21 @@ def contains_game_grid(image):
         if not rect.is_rectangle():
             return None
     return cont
-    # ch, cw, grid_points = get_grid_coords_in_warped_img(warped_image)
-
-
 
 
 if __name__ == "__main__":
-    print(cv2.__version__[0])
-    print(sp.distance.euclidean([2, 2], [1, 1]))
-    print(contains_game_grid())
-    # counter = 0
-    # for image_path in ['035/image' + str(i) + '.jpg' for i in range(380, 410)]:
-    #     img = cv2.imread(image_path)
-    #     if img is None:
-    #         continue
-    #     contour = identify_rectangles(img, True)
-    #     warped_contour = warp_image(contour[0], img)
-    #     # draw_contours(warped_contour, identify_rectangles(warped_contour, False))
-    #     height, width, channels = warped_contour.shape
-    #     # cv2.waitKey(0)
-    #     ch, cw = calculate_cell_dimensions(width, height)
-    #     bh, bw = calculate_border_dimensions(width, height)
-    #     grid_points = get_cell_grid_coords(bw, bh, cw, ch)
-    #     # cv2.imshow(image_path, warped_contour)
-    #     # cv2.waitKey(0)
-    #
-    #     for point in grid_points:
-    #         # cv2.imshow('',crop_cell_from_grid(warped_contour, point, cw, ch))
-    #         cv2.imwrite('single_cells/im' + str(counter) + '.jpg', crop_cell_from_grid(warped_contour, point, cw, ch))
-    #         counter += 1
-    #         # cv2.circle(warped_contour,(int(point[1]), int(point[0])),2,(255,255,255),-11)
-    #         # cv2.waitKey(0)
-    #     print(image_path)
+    counter = 0
+    for image_path in ['035/image' + str(i) + '.jpg' for i in range(380, 410)]:
+        img = cv2.imread(image_path)
+        if img is None:
+            continue
+        contour = identify_rectangles(img, True)
+        warped_contour = warp_image(contour[0], img)
+        height, width, channels = warped_contour.shape
+        ch, cw = calculate_cell_dimensions(width, height)
+        bh, bw = calculate_border_dimensions(width, height)
+        grid_points = get_cell_grid_coords(bw, bh, cw, ch)
+        for point in grid_points:
+            cv2.imwrite('single_cells/im' + str(counter) + '.jpg', crop_cell_from_grid(warped_contour, point, cw, ch))
+            counter += 1
+        print(image_path)

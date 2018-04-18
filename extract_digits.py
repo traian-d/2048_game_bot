@@ -238,16 +238,10 @@ def make_output_file_path(cropped_dir, digit_dir, image_id):
 
 
 if __name__ == "__main__":
-    #First clear all contents from the cropped digit directories
+    digit_dirs = ['035/']
+    
+    # First clear all contents from the cropped digit directories
     for digit_dir in digit_dirs:
         os.system("rm " + "cropped/" + digit_dir + "*")
 
-    # digit_dirs = [str(2**i) + '/' for i in range(1, 12)]
-    # digit_dirs = ['32/','256/','512/','1024/','2048/']
-    digit_dirs = ['035/']
-
-    # extract_all_cropped_digits('single_cells/', 'cropped/', digit_dirs)
-    # extract_all_cropped_digits('single_cells/', 'cropped/', digit_dirs)
     extract_all_cropped_digits('single_cells/', 'cropped/', digit_dirs)
-
-    # crop_single_image(cv2.imread('single_cells/1024_max/1024/im188.jpg'))
