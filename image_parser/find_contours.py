@@ -132,14 +132,37 @@ def get_warping_parameters(contour):
 
 
 def calculate_cell_dimensions(width, height):
+    '''
+    For a given width and height of the game grid, this method calculates the dimensions of a single cell.
+    The magic numbers correspond to the proportions of the 2048 grid in the actual game.
+    :param width: The width of the grid
+    :param height: The height of the grid
+    :return: height and width of a single cell from the grid
+    '''
     return math.ceil((106.25 / 500) * height), math.ceil((106.25 / 500) * width)
 
 
 def calculate_border_dimensions(width, height):
+    '''
+    For a given width and height of the game grid, this method calculates the dimensions of the border surrounding the cell.
+    The magic numbers correspond to the proportions of the 2048 border in the actual game.
+    :param width: The width of the grid
+    :param height: The height of the grid
+    :return: height and width of the grid border
+    '''
     return math.ceil((15.0 / 500) * height), math.ceil((15.0 / 500) * width)
 
 
 def get_cell_grid_coords(bw, bh, cw, ch):
+    '''
+    Assuming that the game grid starts from the position [0, 0] in the top left corner,
+    this method will return the coordinates of the top left corner of each cell in the grid
+    :param bw: Border width
+    :param bh: Border height
+    :param cw: Cell width
+    :param ch: Cell height
+    :return: An array of coordinates for each cell in the game grid
+    '''
     l1x = bw + cw + bw
     l2x = bw + 2 * cw + 2 * bw
     l3x = bw + 3 * cw + 3 * bw
@@ -157,6 +180,14 @@ def get_cell_grid_coords(bw, bh, cw, ch):
 
 
 def crop_cell_from_grid(grid_image, top_left, cell_width, cell_height):
+    '''
+
+    :param grid_image:
+    :param top_left:
+    :param cell_width:
+    :param cell_height:
+    :return:
+    '''
     return grid_image[top_left[0]: top_left[0] + cell_height,
            top_left[1]: top_left[1] + cell_width]
 
