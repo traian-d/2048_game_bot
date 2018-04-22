@@ -1,22 +1,12 @@
-import numpy as np
-
 import cv2
+import numpy as np
 from sklearn.externals import joblib
 
 import digit_recognition as dr
 import extract_digits as ed
 import find_contours as fc
-from find_contours import get_grid_coords_in_warped_image
 
 trained_mlp = joblib.load('MLP_class_20neurons_sgd.pkl')
-
-
-def compute_transformation_components(image):
-    contour = fc.determine_grid_contour(image)
-    warped_image = fc.warp_image(contour, image)
-    transformation_matrix, max_width, max_height = fc.get_warping_parameters(contour)
-    ch, cw, grid_points = get_grid_coords_in_warped_image(warped_image)
-    return warped_image, grid_points, transformation_matrix, cw, ch
 
 
 def get_grid_points_in_original_image(pts_in_warped, original_transform):
@@ -49,6 +39,7 @@ def is_power_of_two(number):
         return is_power_of_two(number / 2)
     return False
 
+
 def predict_all_cell_contents(grid_image, grid_points, cell_width, cell_height):
     predictions = []
     for point in grid_points:
@@ -75,7 +66,7 @@ def make_empty_image_duplicate(image):
 
 
 def predict(image):
-    warped_image, grid_points, transformation_matrix, cw, ch = compute_transformation_components(image)
+    warped_image, grid_points, transformation_matrix, cw, ch = fc.compute_transformation_components(image)
     predictions = predict_all_cell_contents(warped_image, grid_points, cw, ch)
     original_points = get_grid_points_in_original_image(grid_points, transformation_matrix)
     return original_points, predictions
