@@ -1,7 +1,9 @@
+import os
 import math
 import numpy as np
 import cv2
 from scipy import spatial as sp
+import data_paths as dp
 
 
 class Quadrangle:
@@ -56,27 +58,27 @@ class Quadrangle:
 
 def determine_grid_contour(image):
     """
-    This method will return the contour of a rectangle corresponding to the 2048 game grid.
-    The assumption is that the grid is the largest rectangle in the input image.
+    This method will return the contour of a quadrangle corresponding to the 2048 game grid.
+    The assumption is that the grid is the largest quadrangle in the input image.
     :param image: An image as outputted for example by cv2.imread
-    :return: None or a contour corresponding to the largest rectangle in the image
+    :return: None or a contour corresponding to the largest quadrangle in the image
     """
-    cont = identify_rectangles(image, True)
+    cont = identify_quadrangles(image, True)
     if not cont:
         return None
     return cont[0]
 
 
-def identify_rectangles(image, find_first):
+def identify_quadrangles(image, find_first):
     """
     :param image: An image as outputted for example by cv2.imread
-    :param find_first: Boolean noting whether only the first rectangle by size should be returned. find_first = False
-        will return all identified rectangles.
-    :return: The rectangle(s) identified in the image, in descending size order.
+    :param find_first: Boolean noting whether only the first quadrangle by size should be returned. find_first = False
+        will return all identified quadrangles.
+    :return: The quadrangle(s) identified in the image, in descending size order.
     """
     edges = extract_edges(image)
     cont = find_contours(edges, 16)
-    return keep_rectangles(cont, find_first)
+    return keep_quadrangles(cont, find_first)
 
 
 def extract_edges(image):
@@ -108,13 +110,13 @@ def cv2_version():
     return int(cv2.__version__[0])
 
 
-def keep_rectangles(contours, find_first):
+def keep_quadrangles(contours, find_first):
     """
-    For an array of contours this method outputs an array with those contours that are (approximately) rectangles.
-    If find_first is True the method will simply return the first contour that is a rectangle.
+    For an array of contours this method outputs an array with those contours that are (approximately) quadrangles.
+    If find_first is True the method will simply return the first contour that is a quadrangle.
     :param contours: An array of contours, expected in descending order of size.
-    :param find_first: Boolean noting whether only the first rectangle by size should be returned. find_first = False
-        will return all identified rectangles.
+    :param find_first: Boolean noting whether only the first quadrangle by size should be returned. find_first = False
+        will return all identified quadrangles.
     :return:
     """
     output_contours = []
@@ -122,7 +124,6 @@ def keep_rectangles(contours, find_first):
         # Approximate the contour
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-        # We assume four point contours are rectangles
         if len(approx) == 4:
             output_contours.append(approx)
             if find_first:
@@ -130,36 +131,82 @@ def keep_rectangles(contours, find_first):
     return output_contours
 
 
+def contains_game_grid(image):
+    """
+    A method that determines if an input image contains the 2048 game grid.
+    This is done by first identifying a potential contour of the entire grid.
+    If such a contour is found, the image is warped to bring it to a rectangular shape.
+    Within this rectangular shape we search for other quadrangles.
+    If all of the quadrangles found are rectangular, we assume that they correspond to the cells of the 2048 grid.
+    :param image:
+    :return: Either a contour corresponding to the game grid, or None.
+    """
+    cont = determine_grid_contour(image)
+    if cont is None:
+        return None
+    warped_image = warp_image(cont, image)
+    quadrangles = identify_quadrangles(warped_image, False)
+    if not quadrangles:
+        return None
+    for rectangle in quadrangles:
+        rect = Quadrangle(rectangle)
+        if not rect.is_approx_rectangle():
+            return None
+    return cont
+
+
+def compute_transformation_components(image):
+    """
+    For an image this method computes a series of values that can be used later on in further transformations.
+    :param image: An image.
+    :return:
+    """
+    contour = determine_grid_contour(image)
+    warped_image = warp_image(contour, image)
+    transformation_matrix, max_width, max_height = get_warping_parameters(contour)
+    ch, cw, grid_points = get_grid_coords_in_warped_image(warped_image)
+    return warped_image, grid_points, transformation_matrix, cw, ch
+
+
+def get_grid_coords_in_warped_image(warped_image):
+    height, width, channels = warped_image.shape
+    ch, cw = calculate_cell_dimensions(width, height)
+    bh, bw = calculate_border_dimensions(width, height)
+    grid_points = get_cell_grid_coords(bw, bh, cw, ch)
+    return ch, cw, grid_points
+
+
 def warp_image(contour, image):
-    M, maxHeight, maxWidth = get_warping_parameters(contour)
-    return cv2.warpPerspective(image, M, (maxWidth, maxHeight))
+    """
+    A method that warps an image containing to a 2048 game grid so that the grid becomes rectangular.
+    :param contour: The contour of the grid in the image
+    :param image: An image containing a 2048 game grid
+    :return: A warped version of the image.
+    """
+    M, max_height, max_width = get_warping_parameters(contour)
+    return cv2.warpPerspective(image, M, (max_width, max_height))
 
 
 def get_warping_parameters(contour):
-    rect = Quadrangle(contour)
-    # (tl, tr, br, bl) = rect.array_form()
-    # widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
-    # widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
-    # # ...and now for the height of our new image
-    # heightA = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
-    # heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
-    # take the maximum of the width and height values to reach
-    # our final dimensions
-    # maxWidth = max(int(widthA), int(widthB))
-    # maxHeight = max(int(heightA), int(heightB))
-    maxWidth = max(rect.top, rect.bottom)
-    maxHeight = max(rect.left, rect.right)
+    """
+    :param contour: A (quasi)rectangular contour.
+    :return: A transformation matrix needed to transform the contour to a rectangle as well as height and width of
+    the transformed contour.
+    """
+    quad = Quadrangle(contour)
+    max_width = int(max(quad.top, quad.bottom))
+    max_height = int(max(quad.left, quad.right))
     # construct our destination points which will be used to
     # map the screen to a top-down, "birds eye" view
     dst = np.array([
         [0, 0],
-        [maxWidth - 1, 0],
-        [maxWidth - 1, maxHeight - 1],
-        [0, maxHeight - 1]], dtype="float32")
+        [max_width - 1, 0],
+        [max_width - 1, max_height - 1],
+        [0, max_height - 1]], dtype="float32")
     # calculate the perspective transform matrix and warp
     # the perspective to grab the screen
-    M = cv2.getPerspectiveTransform(rect.array_form(), dst)
-    return M, maxHeight, maxWidth
+    M = cv2.getPerspectiveTransform(quad.array_form(), dst)
+    return M, max_height, max_width
 
 
 def calculate_cell_dimensions(width, height):
@@ -170,7 +217,7 @@ def calculate_cell_dimensions(width, height):
     :param height: The height of the grid
     :return: height and width of a single cell from the grid
     """
-    return math.ceil((106.25 / 500) * height), math.ceil((106.25 / 500) * width)
+    return int(math.ceil((106.25 / 500) * height)), int(math.ceil((106.25 / 500) * width))
 
 
 def calculate_border_dimensions(width, height):
@@ -181,13 +228,13 @@ def calculate_border_dimensions(width, height):
     :param height: The height of the grid
     :return: height and width of the grid border
     """
-    return math.ceil((15.0 / 500) * height), math.ceil((15.0 / 500) * width)
+    return int(math.ceil((15.0 / 500) * height)), int(math.ceil((15.0 / 500) * width))
 
 
 def get_cell_grid_coords(bw, bh, cw, ch):
     """
     Assuming that the game grid starts from the position [0, 0] in the top left corner,
-    this method will return the coordinates of the top left corner of each cell in the grid
+    this method will return the coordinates of the top left corner of each cell in the grid.
     :param bw: Border width
     :param bh: Border height
     :param cw: Cell width
@@ -212,72 +259,31 @@ def get_cell_grid_coords(bw, bh, cw, ch):
 
 def crop_cell_from_grid(grid_image, top_left, cell_width, cell_height):
     """
-
-    :param grid_image:
-    :param top_left:
-    :param cell_width:
-    :param cell_height:
-    :return:
+    This method is meant to extract a single cell from the 2048 game grid. It does this by returning a sub-image located
+    at certain coordinates, with a given width and height.
+    :param grid_image: An image containting exclusively the 2048 game grid.
+    :param top_left: The top left corner coordinates of the cell to be extracted.
+    :param cell_width: The width of the cell to be exracted
+    :param cell_height: The height of the cell to be exracted
+    :return: A sub-image corresponding to a singe game cell
     """
     return grid_image[top_left[0]: top_left[0] + cell_height,
            top_left[1]: top_left[1] + cell_width]
 
 
-def get_cell_boundaries(cell_length, bottom_left_coords):
-    return [
-            bottom_left_coords,  # bottom left point
-            [bottom_left_coords[0] + cell_length, bottom_left_coords[1]],  # bottom right
-            [bottom_left_coords[0] + cell_length, bottom_left_coords[1] + cell_length],  # top right
-            [bottom_left_coords[0], bottom_left_coords[1] + cell_length]  # top left
-    ]
-
-
-def get_grid_coords_in_warped_image(warped_image):
-    height, width, channels = warped_image.shape
-    ch, cw = calculate_cell_dimensions(width, height)
-    bh, bw = calculate_border_dimensions(width, height)
-    grid_points = get_cell_grid_coords(bw, bh, cw, ch)
-    return ch, cw, grid_points
-
-
-def contains_game_grid(image):
-    cont = determine_grid_contour(image)
-    if cont is None:
-        return None
-    # return True
-    warped_image = warp_image(cont, image)
-    rectangles = identify_rectangles(warped_image, False)
-    if not rectangles:
-        return None
-    for rectangle in rectangles:
-        rect = Quadrangle(rectangle)
-        if not rect.is_approx_rectangle():
-            return None
-    return cont
-
-
-def compute_transformation_components(image):
-    contour = determine_grid_contour(image)
-    warped_image = warp_image(contour, image)
-    transformation_matrix, max_width, max_height = get_warping_parameters(contour)
-    ch, cw, grid_points = get_grid_coords_in_warped_image(warped_image)
-    return warped_image, grid_points, transformation_matrix, cw, ch
-
-
 if __name__ == "__main__":
     counter = 0
-    for image_path in ['035/image' + str(i) + '.jpg' for i in range(380, 410)]:
-        img = cv2.imread(image_path)
+    for filename in os.listdir(dp.RAW_IMAGES_PATH):
+        img = cv2.imread(dp.RAW_IMAGES_PATH + filename)
         if img is None:
             continue
-        contour = identify_rectangles(img, True)
+        contour = identify_quadrangles(img, True)
         warped_contour = warp_image(contour[0], img)
         height, width, channels = warped_contour.shape
         ch, cw = calculate_cell_dimensions(width, height)
         bh, bw = calculate_border_dimensions(width, height)
         grid_points = get_cell_grid_coords(bw, bh, cw, ch)
         for point in grid_points:
-            cv2.imwrite('single_cells/im' + str(counter) + '.jpg', crop_cell_from_grid(warped_contour, point, cw, ch))
+            cv2.imwrite(dp.CELLS_PATH + 'im' + str(counter) + '.jpg', crop_cell_from_grid(warped_contour, point, cw, ch))
             counter += 1
-        print(image_path)
-
+        print(filename)

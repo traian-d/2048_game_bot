@@ -1,38 +1,21 @@
 import os
 import numpy as np
 import cv2
+import data_paths as dp
 
 
 def is_digit_bounding_rect(width, height, image_shape):
-    '''
-
-    :param width:
-    :param height:
-    :param image_shape:
-    :return:
-    '''
     img_h = image_shape[0]
     img_w = image_shape[1]
     return (0.9 * img_h <= height <= 1.1 * img_h) and (0.9 * img_w <= width <= 1.1 * img_w)
 
 
 def is_child_of(contour, parent_id):
-    '''
-
-    :param contour:
-    :param parent_id:
-    :return:
-    '''
     return contour[3] == parent_id
 
 
 def extract_digit_contours(contours, image_shape):
-    '''
 
-    :param contours:
-    :param image_shape:
-    :return:
-    '''
     # [Next, Previous, First_Child, Parent]
     actual_contours = contours[1]
     hierarchy = contours[2]
@@ -54,26 +37,13 @@ def extract_digit_contours(contours, image_shape):
 #filter top level contour with box the size of the image
 # and child contours that are not directly nested in the top level
 def crop_cell_from_grid(grid_image, top_left, cell_width, cell_height):
-    '''
 
-    :param grid_image:
-    :param top_left:
-    :param cell_width:
-    :param cell_height:
-    :return:
-    '''
     return grid_image[top_left[0]: top_left[0] + cell_height,
            top_left[1]: top_left[1] + cell_width]
 
 
 def crop_digits(row_regions, col_regions, img):
-    '''
 
-    :param row_regions:
-    :param col_regions:
-    :param img:
-    :return:
-    '''
     digits = []
     for row_reg in row_regions:
         for col_reg in col_regions:
@@ -86,15 +56,7 @@ def crop_digits(row_regions, col_regions, img):
 
 
 def trim_image_sides(image, up, down, left, right):
-    '''
 
-    :param image:
-    :param up:
-    :param down:
-    :param left:
-    :param right:
-    :return:
-    '''
     height, width = image.shape
     up_trim = int(up * height)
     down_trim = int(down * height)
@@ -104,23 +66,14 @@ def trim_image_sides(image, up, down, left, right):
 
 
 def make_digit_boxes(thresh_image):
-    '''
 
-    :param thresh_image:
-    :return:
-    '''
     row_density = np.sum(thresh_image/255, axis=0)
     col_density = np.sum(thresh_image/255, axis=1)
     return get_digit_regions(row_density, 2), get_digit_regions(col_density, 2)
 
 
 def get_digit_regions(density, box_adj):
-    '''
 
-    :param density:
-    :param box_adj:
-    :return:
-    '''
     regions = []
     start = 0
     in_region = False
@@ -138,42 +91,12 @@ def get_digit_regions(density, box_adj):
 
 
 def region_is_long_enough(start, stop):
-    '''
 
-    :param start:
-    :param stop:
-    :return:
-    '''
     return stop - start > 6
 
 
-def extract_all_cropped_digits(single_cell_dir, cropped_dir, digit_dirs):
-    '''
-
-    :param single_cell_dir:
-    :param cropped_dir:
-    :param digit_dirs:
-    :return:
-    '''
-    for digit_dir in digit_dirs:
-        counter = 0
-        for filename in os.listdir(single_cell_dir + digit_dir):
-            input_file_path = make_input_file_path(digit_dir, filename, single_cell_dir)
-            print(input_file_path)
-            img = cv2.imread(input_file_path)
-            thresh = threshold_image(img)
-            digits = crop_single_image(thresh)
-            for digit in digits:
-                write_digit_to_file(make_output_file_path(cropped_dir, digit_dir, counter), digit)
-                counter += 1
-
-
 def make_minority_white(image):
-    '''
 
-    :param image:
-    :return:
-    '''
     h, w = image.shape
     white_count = np.sum(np.sum(image / 255, axis=0))
     total_count = h*w
@@ -183,11 +106,11 @@ def make_minority_white(image):
 
 
 def crop_single_image(img):
-    '''
+    """
     Expects thresholded image
     :param img:
     :return:
-    '''
+    """
     row_regions, col_regions = make_digit_boxes(img)
     return crop_digits(row_regions, col_regions, img)
 
@@ -197,51 +120,24 @@ def threshold_image(img):
     kernel = np.array([[-1.1, -1.1, -1.1], [-1, 9, -1], [-1, -1, -1]])
     blur = cv2.filter2D(gray, -1, kernel)
     thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-    # cv2.imshow("", thresh)
-    # cv2.waitKey(0)
     thresh = trim_image_sides(thresh, 0.1, 0.1, 0.0, 0.05)
     thresh = make_minority_white(thresh)
     return thresh
 
 
-def write_digit_to_file(file_path, digit):
-    '''
-
-    :param file_path:
-    :param digit:
-    :return:
-    '''
-    cv2.imwrite(file_path, digit)
-    print(file_path)
-
-
-def make_input_file_path(digit_dir, filename, single_cell_dir):
-    '''
-
-    :param digit_dir:
-    :param filename:
-    :param single_cell_dir:
-    :return:
-    '''
-    return single_cell_dir + digit_dir + filename
-
-
-def make_output_file_path(cropped_dir, digit_dir, image_id):
-    '''
-    
-    :param cropped_dir:
-    :param digit_dir:
-    :param image_id:
-    :return:
-    '''
-    return cropped_dir + digit_dir + '035_im' + str(image_id) + '.jpg'
+def extract_all_cropped_digits():
+    counter = 0
+    for filename in os.listdir(dp.CELLS_PATH):
+        img = cv2.imread(dp.CELLS_PATH + filename)
+        thresh = threshold_image(img)
+        digits = crop_single_image(thresh)
+        for digit in digits:
+            cv2.imwrite(dp.SINGLE_DIGITS_PATH + "digit" + str(counter) + ".jpg", digit)
+            print(counter)
+            counter += 1
 
 
 if __name__ == "__main__":
-    digit_dirs = ['035/']
-    
-    # First clear all contents from the cropped digit directories
-    for digit_dir in digit_dirs:
-        os.system("rm " + "cropped/" + digit_dir + "*")
+    os.system("rm -rf " + dp.SINGLE_DIGITS_PATH + "*")
+    extract_all_cropped_digits()
 
-    extract_all_cropped_digits('single_cells/', 'cropped/', digit_dirs)
