@@ -4,16 +4,6 @@ import cv2
 import data_paths as dp
 
 
-def is_digit_bounding_rect(width, height, image_shape):
-    img_h = image_shape[0]
-    img_w = image_shape[1]
-    return (0.9 * img_h <= height <= 1.1 * img_h) and (0.9 * img_w <= width <= 1.1 * img_w)
-
-
-def is_child_of(contour, parent_id):
-    return contour[3] == parent_id
-
-
 def extract_digit_contours(contours, image_shape):
 
     # [Next, Previous, First_Child, Parent]
@@ -34,8 +24,16 @@ def extract_digit_contours(contours, image_shape):
     return digit_contour_rects
 
 
-#filter top level contour with box the size of the image
-# and child contours that are not directly nested in the top level
+def is_digit_bounding_rect(width, height, image_shape):
+    img_h = image_shape[0]
+    img_w = image_shape[1]
+    return (0.9 * img_h <= height <= 1.1 * img_h) and (0.9 * img_w <= width <= 1.1 * img_w)
+
+
+def is_child_of(contour, parent_id):
+    return contour[3] == parent_id
+
+
 def crop_cell_from_grid(grid_image, top_left, cell_width, cell_height):
 
     return grid_image[top_left[0]: top_left[0] + cell_height,

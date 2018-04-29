@@ -6,7 +6,7 @@ import digit_recognition as dr
 import extract_digits as ed
 import find_contours as fc
 
-trained_mlp = joblib.load('MLP_class_20neurons_sgd.pkl')
+trained_mlp = joblib.load('image_parser/MLP_class_20neurons_sgd.pkl')
 
 
 def get_grid_points_in_original_image(pts_in_warped, original_transform):
@@ -25,8 +25,8 @@ def predict_single_cell_content(cell, trained_model):
         std_digit = std_digit.reshape(1, -1) / 255.
         prediction *= 10
         prediction += trained_model.predict(std_digit)
-    if not is_power_of_two(prediction):
-        return 0
+    # if not is_power_of_two(prediction):
+    #     return 0
     return prediction
 
 
@@ -73,13 +73,13 @@ def predict(image):
 
 
 if __name__ == "__main__":
-    img = cv2.imread('test_photos/image114.jpg')
+    img = cv2.imread('/home/data/PycharmProjects/untitled/image_parser/data/raw_images/image403.jpg')
     orig_positions, preds = predict(img)
-    print(preds)
     cv2.imshow("",ed.threshold_image(img))
     cv2.waitKey(0)
     empty_img = make_empty_image_duplicate(img)
     add_points_to_image(img, orig_positions, preds)
     cv2.imshow("", img)
     cv2.waitKey(0)
+    cv2.imwrite("predicted_numbers.jpg", img)
     print(fc.contains_game_grid(img))
