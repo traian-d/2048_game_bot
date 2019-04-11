@@ -39,7 +39,6 @@ class Quadrangle:
 
     def is_approx_rectangle(self):
         """
-
         :return: Boolean saying whether the quadrangle is approximately a rectangle
         """
         return \
@@ -131,20 +130,20 @@ def keep_quadrangles(contours, find_first):
     return output_contours
 
 
-def contains_game_grid(image):
+def extract_game_grid(gray_image):
     """
     A method that determines if an input image contains the 2048 game grid.
     This is done by first identifying a potential contour of the entire grid.
     If such a contour is found, the image is warped to bring it to a rectangular shape.
     Within this rectangular shape we search for other quadrangles.
     If all of the quadrangles found are rectangular, we assume that they correspond to the cells of the 2048 grid.
-    :param image:
+    :param gray_image: A grayscale image
     :return: Either a contour corresponding to the game grid, or None.
     """
-    cont = determine_grid_contour(image)
+    cont = determine_grid_contour(gray_image)
     if cont is None:
         return None
-    warped_image = warp_image(cont, image)
+    warped_image = warp_image(cont, gray_image)
     quadrangles = identify_quadrangles(warped_image, False)
     if not quadrangles:
         return None

@@ -82,4 +82,4 @@ if __name__ == "__main__":
     cv2.imshow("", img)
     cv2.waitKey(0)
     cv2.imwrite("predicted_numbers.jpg", img)
-    print(fc.contains_game_grid(img))
+    print(fc.extract_game_grid(img))

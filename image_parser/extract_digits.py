@@ -4,34 +4,34 @@ import cv2
 import data_paths as dp
 
 
-def extract_digit_contours(contours, image_shape):
-
-    # [Next, Previous, First_Child, Parent]
-    actual_contours = contours[1]
-    hierarchy = contours[2]
-    top_level_contour = -1
-    digit_contour_rects = []
-    for i in range(len(actual_contours)):
-        # compute the bounding box of the contour
-        contour = actual_contours[i]
-        cont_hierarchy = hierarchy[0][i]
-        x, y, w, h = cv2.boundingRect(contour)
-        if is_digit_bounding_rect(w, h, image_shape):
-            top_level_contour = i
-            continue
-        if is_child_of(cont_hierarchy, top_level_contour):
-            digit_contour_rects.append((x, y, w, h))
-    return digit_contour_rects
-
-
-def is_digit_bounding_rect(width, height, image_shape):
-    img_h = image_shape[0]
-    img_w = image_shape[1]
-    return (0.9 * img_h <= height <= 1.1 * img_h) and (0.9 * img_w <= width <= 1.1 * img_w)
+# def extract_digit_contours(contours, image_shape):
+#
+#     # [Next, Previous, First_Child, Parent]
+#     actual_contours = contours[1]
+#     hierarchy = contours[2]
+#     top_level_contour = -1
+#     digit_contour_rects = []
+#     for i in range(len(actual_contours)):
+#         # compute the bounding box of the contour
+#         contour = actual_contours[i]
+#         cont_hierarchy = hierarchy[0][i]
+#         x, y, w, h = cv2.boundingRect(contour)
+#         if is_digit_bounding_rect(w, h, image_shape):
+#             top_level_contour = i
+#             continue
+#         if is_child_of(cont_hierarchy, top_level_contour):
+#             digit_contour_rects.append((x, y, w, h))
+#     return digit_contour_rects
 
 
-def is_child_of(contour, parent_id):
-    return contour[3] == parent_id
+# def is_digit_bounding_rect(width, height, image_shape):
+#     img_h = image_shape[0]
+#     img_w = image_shape[1]
+#     return (0.9 * img_h <= height <= 1.1 * img_h) and (0.9 * img_w <= width <= 1.1 * img_w)
+#
+#
+# def is_child_of(contour, parent_id):
+#     return contour[3] == parent_id
 
 
 def crop_cell_from_grid(grid_image, top_left, cell_width, cell_height):
@@ -89,12 +89,10 @@ def get_digit_regions(density, box_adj):
 
 
 def region_is_long_enough(start, stop):
-
     return stop - start > 6
 
 
 def make_minority_white(image):
-
     h, w = image.shape
     white_count = np.sum(np.sum(image / 255, axis=0))
     total_count = h*w

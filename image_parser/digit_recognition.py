@@ -6,7 +6,7 @@ import os
 import cv2
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
-
+import data_paths as dp
 IMAGE_HEIGHT = 26
 IMAGE_WIDTH = 22
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     X_test = []
     y_test = []
     for i in range(10):
-        X_loc = read_and_standardize_images('/home/data/PycharmProjects/2048 data/cropped/single_digits/' + str(i) + '/')
+        X_loc = read_and_standardize_images(dp.SINGLE_DIGITS_PATH + str(i) + '/')
         y_loc = np.ones((len(X_loc),), dtype=np.int) * i
         X_tr, X_te, y_tr, y_te = train_test_split(X_loc, y_loc, test_size=0.3, random_state=42)
         X_train.extend(X_tr)

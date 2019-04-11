@@ -18,35 +18,30 @@ with picamera.PiCamera() as camera:
     camera.start_preview()
     time.sleep(2)
     for f in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-        # grab the raw NumPy array representing the image and initialize
-        # the timestamp and occupied/unoccupied text
+        # grab the raw NumPy array representing the image
         frame = f.array
         print(i)
         i += 1
-
         # resize the frame, convert it to grayscale, and blur it
         frame_res = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
         gray = cv2.cvtColor(frame_res, cv2.COLOR_BGR2GRAY)
-        gray = cv2.GaussianBlur(gray, (21, 21), 0)
-
+        blur = cv2.GaussianBlur(gray, (21, 21), 0)
         # if the average frame is None, initialize it
         if avg is None:
-            avg = gray.copy().astype("float")
+            avg = blur.copy().astype("float")
             rawCapture.truncate(0)
             continue
-
         # accumulate the weighted average between the current frame and
         # previous frames, then compute the difference between the current
         # frame and running average
-        cv2.accumulateWeighted(gray, avg, 0.5)
-        frameDelta = cv2.absdiff(gray, cv2.convertScaleAbs(avg))
+        cv2.accumulateWeighted(blur, avg, 0.5)
+        frameDelta = cv2.absdiff(blur, cv2.convertScaleAbs(avg))
         if sum(sum(frameDelta)) < 60000:
-            # if i < 10:
-            grid_contour = fc.contains_game_grid(frame)
+            grid_contour = fc.extract_game_grid(gray)
             for o in camera.overlays:
                 camera.remove_overlay(o)
             if grid_contour is not None:
-                capture = frame
+                capture = gray
                 original_points, predictions = main.predict(capture)
                 empty_img = main.make_empty_image_duplicate(capture)
                 main.add_points_to_image(empty_img, original_points, predictions)
@@ -56,5 +51,4 @@ with picamera.PiCamera() as camera:
                 o.layer = 3
         # clear the stream in preparation for the next frame
         rawCapture.truncate(0)
-    time.sleep(150)
     camera.stop_preview()
