@@ -1,17 +1,23 @@
 class Board:
-
     def __init__(self):
         self.grid = {'00': 0, '01': 0, '02': 0, '03': 0,
                      '10': 0, '11': 0, '12': 0, '13': 0,
                      '20': 0, '21': 0, '22': 0, '23': 0,
                      '30': 0, '31': 0, '32': 0, '33': 0}
         self.random_spawn()
+        self.finished = False
 
-    def random_spawn(self):
-        import random
+    def random_spawn(self, prob_of_4=0.1):
+        import numpy as np
         zeros = [el for el in self.grid if not self.grid[el]]
-        position = random.randint(0, len(zeros) - 1)
-        self.grid[zeros[position]] = 2
+        empty_cells = len(zeros)
+        if empty_cells == 0:
+            self.finished = True
+            return
+        position = np.random.randint(0, empty_cells - 1) if empty_cells > 1 else 0
+        is_4 = np.random.uniform(0, 1)
+        new_spawn = 4 if is_4 < prob_of_4 else 2
+        self.grid[zeros[position]] = new_spawn
 
     def push(self, c1, c2, c3, c4):
         reversed_list = []
@@ -76,22 +82,59 @@ class Board:
         print(str(self.grid['30']) + ' ' + str(self.grid['31']) + ' ' + str(self.grid['32']) + ' ' + str(self.grid['33']))
         print('')
 
+    def reached_2048(self):
+        maxim = 0
+        for cell in self.grid.keys():
+            if self.grid[cell] > maxim:
+                maxim = self.grid[cell]
+        return maxim == 2048
 
-if __name__ == '__main__':
+    def is_finished(self):
+        return self.finished
+
+
+def random_input():
+    import numpy as np
+    return np.random.randint(0, 4)
+
+
+def keyboard_input():
+    k = input()
+    if k == 'w':
+        return 0
+    elif k == 's':
+        return 1
+    elif k == 'a':
+        return 2
+    elif k == 'd':
+        return 3
+
+
+def game(delay=0.25, iterations=None, action_func=random_input):
+    import time
     import os
     board = Board()
     board.print_grid()
-    k = input()
-    while k != 'c':
+    counter = 0
+    while not board.is_finished():
         os.system('clear')
-        if k == 'w':
+        if iterations and counter >= iterations:
+            break
+        counter += 1
+        action = action_func()
+        if action == 0:
             board.push_up()
-        elif k == 's':
+        if action == 1:
             board.push_down()
-        elif k == 'a':
+        if action == 2:
             board.push_left()
-        elif k == 'd':
+        if action == 3:
             board.push_right()
+        if action_func == random_input:
+            time.sleep(delay)
         board.random_spawn()
         board.print_grid()
-        k = input()
+
+
+if __name__ == '__main__':
+    game(iterations=500, delay=0.15, action_func=random_input)
