@@ -110,14 +110,16 @@ def keyboard_input():
         return 3
 
 
-def game(delay=0.25, iterations=None, action_func=random_input):
+def game(delay=0.25, iterations=None, action_func=random_input, show=True):
     import time
     import os
     board = Board()
-    board.print_grid()
+    if show:
+        board.print_grid()
     counter = 0
     while not board.is_finished():
-        os.system('clear')
+        if show:
+            os.system('clear')
         if iterations and counter >= iterations:
             break
         counter += 1
@@ -133,8 +135,20 @@ def game(delay=0.25, iterations=None, action_func=random_input):
         if action_func == random_input:
             time.sleep(delay)
         board.random_spawn()
-        board.print_grid()
+        if show:
+            board.print_grid()
+    return counter, board.grid
 
 
 if __name__ == '__main__':
-    game(iterations=500, delay=0.15, action_func=random_input)
+    counters = []
+    states = []
+    for i in range(50000):
+        counter, final_state = game(iterations=500, delay=0.0, action_func=random_input, show=False)
+        counters.append(counter)
+        states.append(final_state)
+    with open('counts.csv', mode='w') as f:
+        f.write('counts,cell,value\n')
+        for i in range(len(counters)):
+            for cell in states[i].keys():
+                f.write('{},{},{}\n'.format(str(counters[i]), 'c' + cell, str(states[i][cell])))
