@@ -6,6 +6,7 @@ class Board:
                      '30': 0, '31': 0, '32': 0, '33': 0}
         self.random_spawn()
         self.finished = False
+        self.state_changed = False
 
     def random_spawn(self, prob_of_4=0.1):
         import numpy as np
@@ -33,10 +34,17 @@ class Board:
         collapsed_list = self.sum_up(reversed_list)
         collapsed_list.extend([0] * (4 - len(collapsed_list)))
 
+        if self.has_changed(c1, c2, c3, c4, collapsed_list):
+            self.state_changed = True
+
         self.grid[c1] = collapsed_list[3]
         self.grid[c2] = collapsed_list[2]
         self.grid[c3] = collapsed_list[1]
         self.grid[c4] = collapsed_list[0]
+
+    def has_changed(self, c1, c2, c3, c4, new_vals):
+        return self.grid[c1] != new_vals[3] or self.grid[c2] != new_vals[2] or \
+                self.grid[c3] != new_vals[1] or self.grid[c4] != new_vals[0]
 
     def sum_up(self, l):
         output = []
@@ -52,24 +60,28 @@ class Board:
         return output
 
     def push_up(self):
+        self.state_changed = False
         self.push('30', '20', '10', '00')
         self.push('31', '21', '11', '01')
         self.push('32', '22', '12', '02')
         self.push('33', '23', '13', '03')
 
     def push_down(self):
+        self.state_changed = False
         self.push('00', '10', '20', '30')
         self.push('01', '11', '21', '31')
         self.push('02', '12', '22', '32')
         self.push('03', '13', '23', '33')
 
     def push_left(self):
+        self.state_changed = False
         self.push('03', '02', '01', '00')
         self.push('13', '12', '11', '10')
         self.push('23', '22', '21', '20')
         self.push('33', '32', '31', '30')
 
     def push_right(self):
+        self.state_changed = False
         self.push('00', '01', '02', '03')
         self.push('10', '11', '12', '13')
         self.push('20', '21', '22', '23')
@@ -134,21 +146,23 @@ def game(delay=0.25, iterations=None, action_func=random_input, show=True):
             board.push_right()
         if action_func == random_input:
             time.sleep(delay)
-        board.random_spawn()
+        if board.state_changed:
+            board.random_spawn()
         if show:
             board.print_grid()
     return counter, board.grid
 
 
 if __name__ == '__main__':
-    counters = []
-    states = []
-    for i in range(50000):
-        counter, final_state = game(iterations=500, delay=0.0, action_func=random_input, show=False)
-        counters.append(counter)
-        states.append(final_state)
-    with open('counts.csv', mode='w') as f:
-        f.write('counts,cell,value\n')
-        for i in range(len(counters)):
-            for cell in states[i].keys():
-                f.write('{},{},{}\n'.format(str(counters[i]), 'c' + cell, str(states[i][cell])))
+    game(action_func=keyboard_input, show=True)
+    # counters = []
+    # states = []
+    # for i in range(50000):
+    #     counter, final_state = game(iterations=500, delay=0.0, action_func=random_input, show=False)
+    #     counters.append(counter)
+    #     states.append(final_state)
+    # with open('counts.csv', mode='w') as f:
+    #     f.write('counts,cell,value\n')
+    #     for i in range(len(counters)):
+    #         for cell in states[i].keys():
+    #             f.write('{},{},{}\n'.format(str(counters[i]), 'c' + cell, str(states[i][cell])))
