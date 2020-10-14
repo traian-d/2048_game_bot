@@ -60,28 +60,24 @@ class Board:
         return output
 
     def push_up(self):
-        self.state_changed = False
         self.push('30', '20', '10', '00')
         self.push('31', '21', '11', '01')
         self.push('32', '22', '12', '02')
         self.push('33', '23', '13', '03')
 
     def push_down(self):
-        self.state_changed = False
         self.push('00', '10', '20', '30')
         self.push('01', '11', '21', '31')
         self.push('02', '12', '22', '32')
         self.push('03', '13', '23', '33')
 
     def push_left(self):
-        self.state_changed = False
         self.push('03', '02', '01', '00')
         self.push('13', '12', '11', '10')
         self.push('23', '22', '21', '20')
         self.push('33', '32', '31', '30')
 
     def push_right(self):
-        self.state_changed = False
         self.push('00', '01', '02', '03')
         self.push('10', '11', '12', '13')
         self.push('20', '21', '22', '23')
@@ -136,6 +132,7 @@ def game(delay=0.25, iterations=None, action_func=random_input, show=True):
             break
         counter += 1
         action = action_func()
+        board.state_changed = False
         if action == 0:
             board.push_up()
         if action == 1:
