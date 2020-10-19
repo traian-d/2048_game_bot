@@ -1,10 +1,13 @@
 class Board:
-    def __init__(self):
-        self.grid = {'00': 0, '01': 0, '02': 0, '03': 0,
-                     '10': 0, '11': 0, '12': 0, '13': 0,
-                     '20': 0, '21': 0, '22': 0, '23': 0,
-                     '30': 0, '31': 0, '32': 0, '33': 0}
-        self.random_spawn()
+    def __init__(self, grid=None):
+        if grid is None:
+            self.grid = {'00': 0, '01': 0, '02': 0, '03': 0,
+                         '10': 0, '11': 0, '12': 0, '13': 0,
+                         '20': 0, '21': 0, '22': 0, '23': 0,
+                         '30': 0, '31': 0, '32': 0, '33': 0}
+            self.random_spawn()
+        else:
+            self.grid = grid
         self.finished = False
         self.state_changed = False
 
@@ -20,75 +23,51 @@ class Board:
         new_spawn = 4 if is_4 < prob_of_4 else 2
         self.grid[zeros[position]] = new_spawn
 
-    def push(self, c1, c2, c3, c4):
-        reversed_list = []
-        if self.grid[c4]:
-            reversed_list.append(self.grid[c4])
-        if self.grid[c3]:
-            reversed_list.append(self.grid[c3])
-        if self.grid[c2]:
-            reversed_list.append(self.grid[c2])
-        if self.grid[c1]:
-            reversed_list.append(self.grid[c1])
+    def push(self, l):
+        c = 0  # current index
+        has_merged = False
+        while c < 4:
+            if self.grid[l[c]] == 0:
+                nnz = c
+                while nnz < 4 and self.grid[l[nnz]] == 0:
+                    nnz += 1  # increment while there are 0's
+                if nnz == 4:
+                    break  # if nnz is 4 then the entire list after c has 0's => task is finished
+                self.grid[l[c]] = self.grid[l[nnz]]
+                self.grid[l[nnz]] = 0
+                if c > 0 and not has_merged and self.grid[l[c - 1]] == self.grid[l[c]]:
+                    self.grid[l[c - 1]] += self.grid[l[c - 1]]
+                    self.grid[l[c]] = 0
+                self.state_changed = True
+                has_merged = False
+            if c < 3 and self.grid[l[c]] == self.grid[l[c + 1]]:
+                has_merged = True
+                self.grid[l[c]] += self.grid[l[c]]
+                self.grid[l[c + 1]] = 0
+                self.state_changed = True
+            c += 1
 
-        collapsed_list = self.sum_up(reversed_list)
-        collapsed_list.extend([0] * (4 - len(collapsed_list)))
-
-        if self.has_changed(c1, c2, c3, c4, collapsed_list):
-            self.state_changed = True
-
-        self.grid[c1] = collapsed_list[3]
-        self.grid[c2] = collapsed_list[2]
-        self.grid[c3] = collapsed_list[1]
-        self.grid[c4] = collapsed_list[0]
-
-    def has_changed(self, c1, c2, c3, c4, new_vals):
-        return self.grid[c1] != new_vals[3] or self.grid[c2] != new_vals[2] or \
-                self.grid[c3] != new_vals[1] or self.grid[c4] != new_vals[0]
-
-    def sum_up(self, l):
-        output = []
-        i = 0
-        length = len(l)
-        while i < length:
-            if i < length - 1 and l[i] == l[i+1]:
-                output.append(l[i] + l[i+1])
-                i += 1
-            else:
-                output.append(l[i])
-            i += 1
-        return output
+    def push_all(self, lists):
+        for l in lists:
+            self.push(l)
 
     def push_up(self):
-        self.push('30', '20', '10', '00')
-        self.push('31', '21', '11', '01')
-        self.push('32', '22', '12', '02')
-        self.push('33', '23', '13', '03')
+        self.push_all([['30', '20', '10', '00'], ['31', '21', '11', '01'], ['32', '22', '12', '02'], ['33', '23', '13', '03']])
 
     def push_down(self):
-        self.push('00', '10', '20', '30')
-        self.push('01', '11', '21', '31')
-        self.push('02', '12', '22', '32')
-        self.push('03', '13', '23', '33')
+        self.push_all([['00', '10', '20', '30'], ['01', '11', '21', '31'], ['02', '12', '22', '32'], ['03', '13', '23', '33']])
 
     def push_left(self):
-        self.push('03', '02', '01', '00')
-        self.push('13', '12', '11', '10')
-        self.push('23', '22', '21', '20')
-        self.push('33', '32', '31', '30')
+        self.push_all([['03', '02', '01', '00'], ['13', '12', '11', '10'], ['23', '22', '21', '20'], ['33', '32', '31', '30']])
 
     def push_right(self):
-        self.push('00', '01', '02', '03')
-        self.push('10', '11', '12', '13')
-        self.push('20', '21', '22', '23')
-        self.push('30', '31', '32', '33')
+        self.push_all([['00', '01', '02', '03'], ['10', '11', '12', '13'], ['20', '21', '22', '23'], ['30', '31', '32', '33']])
 
     def print_grid(self):
-        print(str(self.grid['00']) + ' ' + str(self.grid['01']) + ' ' + str(self.grid['02']) + ' ' + str(self.grid['03']))
-        print(str(self.grid['10']) + ' ' + str(self.grid['11']) + ' ' + str(self.grid['12']) + ' ' + str(self.grid['13']))
-        print(str(self.grid['20']) + ' ' + str(self.grid['21']) + ' ' + str(self.grid['22']) + ' ' + str(self.grid['23']))
-        print(str(self.grid['30']) + ' ' + str(self.grid['31']) + ' ' + str(self.grid['32']) + ' ' + str(self.grid['33']))
-        print('')
+        print(f"{self.grid['00']} {self.grid['01']} {self.grid['02']} {self.grid['03']}")
+        print(f"{self.grid['10']} {self.grid['11']} {self.grid['12']} {self.grid['13']}")
+        print(f"{self.grid['20']} {self.grid['21']} {self.grid['22']} {self.grid['23']}")
+        print(f"{self.grid['30']} {self.grid['31']} {self.grid['32']} {self.grid['33']}")
 
     def reached_2048(self):
         maxim = 0
@@ -108,20 +87,14 @@ def random_input():
 
 def keyboard_input():
     k = input()
-    if k == 'w':
-        return 0
-    elif k == 's':
-        return 1
-    elif k == 'a':
-        return 2
-    elif k == 'd':
-        return 3
+    return {'w': 1, 'a': 3, 's': 0, 'd': 2}.get(k)
 
 
-def game(delay=0.25, iterations=None, action_func=random_input, show=True):
+def game(delay=0.25, iterations=None, action_func=random_input, show=True, grid=None):
     import time
     import os
-    board = Board()
+    board = Board(grid)
+    action_map = {0: board.push_up, 1: board.push_down, 2: board.push_left, 3: board.push_right}
     if show:
         board.print_grid()
     counter = 0
@@ -133,14 +106,7 @@ def game(delay=0.25, iterations=None, action_func=random_input, show=True):
         counter += 1
         action = action_func()
         board.state_changed = False
-        if action == 0:
-            board.push_up()
-        if action == 1:
-            board.push_down()
-        if action == 2:
-            board.push_left()
-        if action == 3:
-            board.push_right()
+        action_map.get(action)()
         if action_func == random_input:
             time.sleep(delay)
         if board.state_changed:
@@ -151,13 +117,22 @@ def game(delay=0.25, iterations=None, action_func=random_input, show=True):
 
 
 if __name__ == '__main__':
-    game(action_func=keyboard_input, show=True)
+    import time
+    # grid = {'00': 0, '01': 0, '02': 0, '03': 0,
+    #         '10': 4, '11': 0, '12': 4, '13': 0,
+    #         '20': 8, '21': 4, '22': 2, '23': 0,
+    #         '30': 16, '31': 8, '32': 2, '33': 0}
+    game(action_func=random_input, show=True, delay=0.25)
     # counters = []
     # states = []
-    # for i in range(50000):
+    # start_time = time.time()
+    # for i in range(5000):
+    #     if not i % 1000:
+    #         print(i)
     #     counter, final_state = game(iterations=500, delay=0.0, action_func=random_input, show=False)
     #     counters.append(counter)
     #     states.append(final_state)
+    # print(time.time() - start_time)
     # with open('counts.csv', mode='w') as f:
     #     f.write('counts,cell,value\n')
     #     for i in range(len(counters)):
