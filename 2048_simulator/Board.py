@@ -8,27 +8,22 @@ class Board:
             self.random_spawn()
         else:
             self.grid = grid
-        self.finished = False
         self.state_changed = False
 
     def random_spawn(self, prob_of_4=0.1):
         import numpy as np
         zeros = [el for el in self.grid if not self.grid[el]]
-        empty_cells = len(zeros)
-        if empty_cells == 0:
-            self.finished = True
-            return
-        position = np.random.randint(0, empty_cells - 1) if empty_cells > 1 else 0
+        position = np.random.choice(zeros)
         is_4 = np.random.uniform(0, 1)
         new_spawn = 4 if is_4 < prob_of_4 else 2
-        self.grid[zeros[position]] = new_spawn
+        self.grid[position] = new_spawn
 
     def push(self, l):
         c = 0  # current index
         has_merged = False
         while c < 4:
             if self.grid[l[c]] == 0:
-                nnz = c
+                nnz = c  # nearest nonzero element
                 while nnz < 4 and self.grid[l[nnz]] == 0:
                     nnz += 1  # increment while there are 0's
                 if nnz == 4:
@@ -69,15 +64,17 @@ class Board:
         print(f"{self.grid['20']} {self.grid['21']} {self.grid['22']} {self.grid['23']}")
         print(f"{self.grid['30']} {self.grid['31']} {self.grid['32']} {self.grid['33']}")
 
-    def reached_2048(self):
-        maxim = 0
-        for cell in self.grid.keys():
-            if self.grid[cell] > maxim:
-                maxim = self.grid[cell]
-        return maxim == 2048
+    def can_push(self):
+        return self.cp('00', '01') or self.cp('01', '02') or self.cp('02', '03') or \
+               self.cp('10', '11') or self.cp('11', '12') or self.cp('12', '13') or \
+               self.cp('20', '21') or self.cp('21', '22') or self.cp('22', '23') or \
+               self.cp('30', '31') or self.cp('31', '32') or self.cp('32', '33') or \
+               self.cp('00', '10') or self.cp('01', '11') or self.cp('02', '12') or self.cp('03', '13') or \
+               self.cp('10', '20') or self.cp('11', '21') or self.cp('12', '22') or self.cp('13', '23') or \
+               self.cp('20', '30') or self.cp('21', '31') or self.cp('22', '32') or self.cp('23', '33')
 
-    def is_finished(self):
-        return self.finished
+    def cp(self, c1, c2):
+        return self.grid[c1] == 0 or self.grid[c2] == 0 or self.grid[c1] == self.grid[c2]
 
 
 def random_input():
@@ -98,7 +95,7 @@ def game(delay=0.25, iterations=None, action_func=random_input, show=True, grid=
     if show:
         board.print_grid()
     counter = 0
-    while not board.is_finished():
+    while board.can_push():
         if show:
             os.system('clear')
         if iterations and counter >= iterations:
@@ -118,21 +115,22 @@ def game(delay=0.25, iterations=None, action_func=random_input, show=True, grid=
 
 if __name__ == '__main__':
     import time
+    import numpy as np
     # grid = {'00': 0, '01': 0, '02': 0, '03': 0,
     #         '10': 4, '11': 0, '12': 4, '13': 0,
     #         '20': 8, '21': 4, '22': 2, '23': 0,
     #         '30': 16, '31': 8, '32': 2, '33': 0}
-    game(action_func=random_input, show=True, delay=0.25)
-    # counters = []
-    # states = []
-    # start_time = time.time()
-    # for i in range(5000):
-    #     if not i % 1000:
-    #         print(i)
-    #     counter, final_state = game(iterations=500, delay=0.0, action_func=random_input, show=False)
-    #     counters.append(counter)
-    #     states.append(final_state)
-    # print(time.time() - start_time)
+    # game(action_func=random_input, show=True, delay=0.25)
+    counters = []
+    states = []
+    start_time = time.time()
+    for i in range(5000):
+        if not i % 1000:
+            print(i)
+        counter, final_state = game(delay=0.0, action_func=random_input, show=False)
+        counters.append(counter)
+        states.append(final_state)
+    print(time.time() - start_time)
     # with open('counts.csv', mode='w') as f:
     #     f.write('counts,cell,value\n')
     #     for i in range(len(counters)):
